@@ -8,6 +8,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS loans(id INTEGER PRIMARY KEY, name TEXT, principal REAL, annual_rate REAL, months INTEGER);
     CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
     CREATE TABLE IF NOT EXISTS calc_runs(id INTEGER PRIMARY KEY, kind TEXT, loan_id INTEGER, input_json TEXT, result_json TEXT, created_at TEXT);
+    CREATE TABLE IF NOT EXISTS rate_benchmarks(id INTEGER PRIMARY KEY, name TEXT, lpr REAL, spread_bp REAL, enabled INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT);
     """)
     if conn.execute("SELECT COUNT(*) c FROM loans").fetchone()["c"] == 0:
         conn.execute("INSERT INTO loans(name,principal,annual_rate,months) VALUES ('首套样例',1000000,3.5,360)")
@@ -17,5 +18,8 @@ def init_db():
         slim = {"monthly_payment": sch["monthly_payment"], "total_interest": sch["total_interest"], "preview": sch["rows"][:3]}
         conn.execute("INSERT INTO calc_runs(kind,loan_id,input_json,result_json,created_at) VALUES ('schedule',1,?,?,datetime('now'))",
             (json.dumps({"principal": 1000000, "annual_rate": 3.5, "months": 360}), json.dumps(slim)))
+        conn.commit()
+    if conn.execute("SELECT COUNT(*) c FROM rate_benchmarks").fetchone()["c"] == 0:
+        conn.execute("INSERT INTO rate_benchmarks(name,lpr,spread_bp,enabled,created_at,updated_at) VALUES ('五年期LPR基准',3.6,-20,1,datetime('now'),datetime('now'))")
         conn.commit()
     conn.close()
